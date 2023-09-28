@@ -1,29 +1,33 @@
-import React, { useEffect, useContext } from 'react';
+import React, { useEffect, useContext, useState, useMemo } from 'react';
 
 import { Box } from '@material-ui/core';
 import { Card, useContent, useCardState } from 'translation-helps-rcl';
 
-import { AppContext } from '../../context';
+import { AppContext, ReferenceContext } from '../../context';
 
-import { SupportContent, ListWords } from '../../components';
+import { SupportContent } from '../../components';
 
 import {
   useListWordsReference,
-  useSelectTypeUniqueWords,
-  useChahgeColorTWL,
-} from '../../hooks';
+  useMarkRepeatedWords,
+  ListReference,
+} from '@texttree/filter-translation-words-rcl';
 
 import useStyles from './style';
 
 export default function SupportTWL(props) {
   const {
-    state: { switchTypeUniqueWords, switchHideRepeatedWords },
+    state: { typeFilter, switchHideRepeatedWords },
   } = useContext(AppContext);
+  const {
+    state: { referenceSelected },
+    actions: { goToBookChapterVerse },
+  } = useContext(ReferenceContext);
 
   const { title, classes, onClose, type, server, fontSize, reference, resource } = props;
   const { bookId, chapter, verse } = reference;
   const classesLocal = useStyles();
-
+  const [closed, setClosed] = useState(false);
   const config = {
     verse,
     chapter,
@@ -40,21 +44,18 @@ export default function SupportTWL(props) {
     ...config,
   });
 
-  const { listWordsReference, listWordsChapter } = useListWordsReference(tsvs, bookId);
-  const { uniqueWordsItems } = useSelectTypeUniqueWords(
-    items,
-    switchTypeUniqueWords,
-    listWordsReference,
-    chapter,
-    verse,
-    listWordsChapter
+  const { listWordsInBook } = useListWordsReference({ tsvs });
+  const { markedWords } = useMarkRepeatedWords({ items, tsvs, type: 'all' });
+  const filteredWords = useMemo(
+    () => markedWords?.filter((word) => !word?.[typeFilter] && typeFilter !== 'disabled'),
+    [markedWords, typeFilter]
   );
 
   const {
     state: { item, headers, filters, itemIndex, markdownView },
     actions: { setFilters, setItemIndex, setMarkdownView },
   } = useCardState({
-    items: !switchHideRepeatedWords ? items : uniqueWordsItems,
+    items: !switchHideRepeatedWords ? markedWords : filteredWords,
     verse,
     chapter,
     projectId: bookId,
@@ -63,14 +64,12 @@ export default function SupportTWL(props) {
   useEffect(() => {
     setItemIndex(0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, chapter, verse, switchHideRepeatedWords, switchTypeUniqueWords]);
+  }, [bookId, chapter, verse, switchHideRepeatedWords, typeFilter]);
 
-  const { changeColor } = useChahgeColorTWL(
-    items,
-    switchHideRepeatedWords,
-    uniqueWordsItems,
-    itemIndex
-  );
+  const onClickLink = (reference) => {
+    goToBookChapterVerse(referenceSelected.bookId, reference[0], reference[1]);
+    setClosed(true);
+  };
 
   return (
     <Card
@@ -79,7 +78,7 @@ export default function SupportTWL(props) {
       onClose={() => onClose(true)}
       classes={classes}
       id={type}
-      items={!switchHideRepeatedWords ? items : uniqueWordsItems}
+      items={!switchHideRepeatedWords ? markedWords : filteredWords}
       headers={headers}
       filters={filters}
       fontSize={fontSize}
@@ -94,22 +93,19 @@ export default function SupportTWL(props) {
         });
       }}
     >
-      {(!switchHideRepeatedWords || uniqueWordsItems.length > 0) && (
-        <ListWords
-          links={
-            !switchHideRepeatedWords
-              ? items &&
-                items.length > 0 &&
-                listWordsReference &&
-                listWordsReference[items[itemIndex]?.TWLink]
-              : uniqueWordsItems &&
-                uniqueWordsItems.length > 0 &&
-                listWordsReference &&
-                listWordsReference[uniqueWordsItems[itemIndex]?.TWLink]
-          }
-        />
+      {(!switchHideRepeatedWords || filteredWords?.length > 0) && (
+        <>
+          <ListReference
+            links={item && listWordsInBook?.[item.TWLink]}
+            onClickLink={onClickLink}
+            currentChapter={chapter}
+            currentVerse={verse}
+            closed={closed}
+            setClosed={setClosed}
+          />
+        </>
       )}
-      <Box className={changeColor ? classesLocal.twl : ''}>
+      <Box className={item?.[typeFilter] ? classesLocal.twl : ''}>
         <SupportContent
           config={config}
           item={item}

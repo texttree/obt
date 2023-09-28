@@ -49,8 +49,8 @@ export function AppContextProvider({ children }) {
   const [switchChunks, setSwitchChunks] = useState(() => {
     return checkLSVal('switchChunks', false, 'boolean');
   });
-  const [switchTypeUniqueWords, setSwitchTypeUniqueWords] = useState(() => {
-    return checkLSVal('switchTypeUniqueWords', 'disabled', 'string');
+  const [typeFilter, setTypeFilter] = useState(() => {
+    return checkLSVal('typeFilter', 'disabled', 'string');
   });
   const [switchHideRepeatedWords, setSwitchHideRepeatedWords] = useState(() => {
     return checkLSVal('switchHideRepeatedWords', false, 'boolean');
@@ -130,8 +130,8 @@ export function AppContextProvider({ children }) {
   }, [switchExtraTitleCard]);
 
   useEffect(() => {
-    localStorage.setItem('switchTypeUniqueWords', switchTypeUniqueWords);
-  }, [switchTypeUniqueWords]);
+    localStorage.setItem('typeFilter', typeFilter);
+  }, [typeFilter]);
 
   useEffect(() => {
     localStorage.setItem('switchHideRepeatedWords', switchHideRepeatedWords);
@@ -200,7 +200,7 @@ export function AppContextProvider({ children }) {
       switchChunks,
       switchExtraTitleCard,
       switchWordPopover,
-      switchTypeUniqueWords,
+      typeFilter,
       switchHideRepeatedWords,
       theme,
       showSettingsMenu,
@@ -232,7 +232,7 @@ export function AppContextProvider({ children }) {
       setSwitchChunks,
       setSwitchExtraTitleCard,
       setSwitchWordPopover,
-      setSwitchTypeUniqueWords,
+      setTypeFilter,
       setSwitchHideRepeatedWords,
       setTheme,
       setShowSettingsMenu,
